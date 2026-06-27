@@ -25,6 +25,8 @@ export default function App() {
   const [p1Swipes, setP1Swipes] = useState({});
   const [p2Swipes, setP2Swipes] = useState({});
   const [shareUrl, setShareUrl] = useState('');
+  const [shareError, setShareError] = useState('');
+  const [shareLoading, setShareLoading] = useState(false);
   const [urlState, setUrlState] = useState(null);
 
   useEffect(() => {
@@ -57,12 +59,24 @@ export default function App() {
     setScreen('p1-swipe');
   }
 
-  function handleP1Swipes(swipes) {
+  async function handleP1Swipes(swipes) {
     setP1Swipes(swipes);
+    setShareError('');
+    setShareLoading(true);
     const setup = { movies, answers };
-    const url = buildShareUrl(setup, swipes);
-    setShareUrl(url);
-    setScreen('p1-share');
+
+    try {
+      const url = await buildShareUrl(setup, swipes);
+      setShareUrl(url);
+      setScreen('p1-share');
+    } catch (err) {
+      console.error('Failed to build share URL', err);
+      setShareError('Something went wrong creating your partner link. Please try again.');
+      setShareUrl('');
+      setScreen('p1-share');
+    } finally {
+      setShareLoading(false);
+    }
   }
 
   // P2 FLOW
@@ -111,7 +125,13 @@ export default function App() {
   );
 
   if (screen === 'p1-share') return (
-    <Share shareUrl={shareUrl} yesCount={p1YesCount} totalCount={filteredMovies.length} />
+    <Share
+      shareUrl={shareUrl}
+      yesCount={p1YesCount}
+      totalCount={filteredMovies.length}
+      isLoading={shareLoading}
+      error={shareError}
+    />
   );
 
   if (screen === 'p2-questionnaire') return (

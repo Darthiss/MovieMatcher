@@ -1,9 +1,10 @@
 import { useState } from 'react';
 
-export default function Share({ shareUrl, yesCount, totalCount }) {
+export default function Share({ shareUrl, yesCount, totalCount, isLoading = false, error = '' }) {
   const [copied, setCopied] = useState(false);
 
   function copy() {
+    if (!shareUrl) return;
     navigator.clipboard.writeText(shareUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
@@ -45,6 +46,12 @@ export default function Share({ shareUrl, yesCount, totalCount }) {
         Now send the link to your partner. They'll answer blindly and we'll reveal the matches!
       </p>
 
+      {error && (
+        <div style={{ color: 'var(--no)', fontSize: 14, marginBottom: 18, maxWidth: 320 }}>
+          ⚠ {error}
+        </div>
+      )}
+
       {/* URL box */}
       <div style={{
         width: '100%',
@@ -60,7 +67,7 @@ export default function Share({ shareUrl, yesCount, totalCount }) {
         textAlign: 'left',
         lineHeight: 1.6,
       }}>
-        {shareUrl.length > 120 ? shareUrl.slice(0, 120) + '…' : shareUrl}
+        {isLoading ? 'Creating your partner link…' : shareUrl ? (shareUrl.length > 120 ? shareUrl.slice(0, 120) + '…' : shareUrl) : 'No link available yet.'}
       </div>
 
       <div style={{
@@ -72,18 +79,19 @@ export default function Share({ shareUrl, yesCount, totalCount }) {
       }}>
         <button
           onClick={share}
+          disabled={isLoading || !shareUrl}
           style={{
-            background: 'var(--accent)',
+            background: isLoading || !shareUrl ? 'var(--bg3)' : 'var(--accent)',
             border: 'none',
             borderRadius: 'var(--radius-sm)',
             padding: '16px',
             color: '#0e0e11',
             fontWeight: 700,
             fontSize: 16,
-            cursor: 'pointer',
+            cursor: isLoading || !shareUrl ? 'not-allowed' : 'pointer',
           }}
         >
-          📤 Send to partner
+          {isLoading ? 'Creating link…' : '📤 Send to partner'}
         </button>
         <button
           onClick={copy}

@@ -14,6 +14,19 @@ export default function SwipeDeck({ movies, onComplete, playerName = 'You' }) {
   const done = index >= movies.length;
   const yesCount = Object.values(swipes).filter(v => v === 'yes').length;
 
+  if (!movie) {
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'var(--bg)', color: 'var(--text-muted)', textAlign: 'center' }}>
+        <div>
+          <h2 style={{ marginBottom: 12 }}>No movies available</h2>
+          <p style={{ maxWidth: 320, margin: '0 auto' }}>
+            There are no movies to swipe right now. Try restarting the app or going back to change your answers.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   function swipe(dir) {
     if (animDir || done) return;
     setAnimDir(dir);
