@@ -2,7 +2,7 @@
 export const QUESTIONS = [
   {
     id: 'vibe',
-    label: 'How does tonight feel?',
+    label: 'What vibe are you chasing tonight?',
     emoji: '🌙',
     type: 'single',
     options: [
@@ -23,6 +23,7 @@ export const QUESTIONS = [
       { value: 'thrilled', label: 'Thrilled', sub: 'Heart racing' },
       { value: 'awe', label: 'In awe', sub: 'Big, beautiful, transcendent' },
       { value: 'unsettled', label: 'Unsettled', sub: 'A little haunted or weird' },
+      { value: 'inspired', label: 'Inspired', sub: 'Moved and uplifted' },
     ],
   },
   {
@@ -34,40 +35,30 @@ export const QUESTIONS = [
       { value: 'light', label: 'Keep it light', sub: 'Bright and breezy' },
       { value: 'edge', label: 'Some edge okay', sub: 'Tension is welcome' },
       { value: 'dark', label: 'Bring the darkness', sub: 'Go all in' },
+      { value: 'any', label: "I don't care", sub: 'Same either way' },
     ],
   },
   {
-    id: 'scale',
-    label: 'What scale appeals to you?',
-    emoji: '🎭',
+    id: 'runtime',
+    label: 'What runtime fits tonight?',
+    emoji: '⏱️',
     type: 'single',
     options: [
-      { value: 'indie', label: 'Indie', sub: 'Small, intimate, personal' },
-      { value: 'mid', label: 'Mid-budget', sub: 'Solid storytelling' },
-      { value: 'blockbuster', label: 'Blockbuster', sub: 'Big spectacle and action' },
-      { value: 'any', label: 'Any scale', sub: 'Surprise me' },
+      { value: '90', label: '90 mins', sub: 'Quick and focused' },
+      { value: '90-120', label: '90–120 mins', sub: 'A comfortable middle' },
+      { value: '120', label: '120+', sub: 'Give it room to breathe' },
+      { value: 'any', label: "I don't care", sub: 'Surprise me' },
     ],
   },
   {
-    id: 'originality',
-    label: 'Original idea or familiar story?',
-    emoji: '💡',
+    id: 'format',
+    label: 'Animated, live action, or either?',
+    emoji: '🎬',
     type: 'single',
     options: [
-      { value: 'original', label: 'Original concept', sub: 'Fresh and inventive' },
-      { value: 'adaptation', label: 'Adaptation/sequel', sub: 'Known universe' },
-      { value: 'either', label: 'Either works', sub: 'No preference' },
-    ],
-  },
-  {
-    id: 'romance',
-    label: 'How much romance?',
-    emoji: '💕',
-    type: 'single',
-    options: [
-      { value: 'none', label: 'None', sub: 'Skip the love plot' },
-      { value: 'subplot', label: 'Subplot', sub: 'Secondary but sweet' },
-      { value: 'central', label: 'Central', sub: 'Love is the story' },
+      { value: 'animated', label: 'Animated', sub: 'Bright and imaginative' },
+      { value: 'live-action', label: 'Live action', sub: 'Grounded and real' },
+      { value: 'any', label: 'Either works', sub: 'No preference' },
     ],
   },
   {
@@ -93,18 +84,12 @@ const GENRE_HINTS = {
   cried: ['drama', 'romance', 'music', 'family'],
   thrilled: ['action', 'adventure', 'thriller', 'science_fiction'],
   awe: ['science_fiction', 'fantasy', 'documentary', 'adventure', 'animation'],
+  inspired: ['drama', 'documentary', 'music', 'history', 'science_fiction', 'fantasy', 'adventure'],
   unsettled: ['thriller', 'horror', 'mystery', 'crime', 'drama'],
   light: ['comedy', 'family', 'animation', 'romance', 'adventure'],
   edge: ['thriller', 'crime', 'mystery', 'drama', 'action'],
   dark: ['horror', 'thriller', 'crime', 'drama', 'mystery'],
-  indie: ['drama', 'documentary', 'music', 'history'],
-  mid: ['drama', 'thriller', 'romance', 'action', 'comedy'],
-  blockbuster: ['action', 'adventure', 'science_fiction', 'fantasy'],
-  original: ['science_fiction', 'fantasy', 'documentary', 'drama'],
-  adaptation: ['action', 'adventure', 'fantasy', 'comedy'],
-  none: ['action', 'thriller', 'adventure', 'horror', 'documentary'],
-  subplot: ['drama', 'comedy', 'adventure', 'animation'],
-  central: ['romance', 'drama', 'comedy', 'music'],
+  any: [],
   classic: ['drama', 'comedy', 'documentary', 'history'],
   modern: ['thriller', 'drama', 'action', 'comedy', 'romance'],
   recent: ['science_fiction', 'action', 'horror', 'thriller'],
@@ -153,6 +138,27 @@ function getMovieGenres(movie) {
   return values;
 }
 
+function getMovieFormat(movie) {
+  if (movie?.format) {
+    return movie.format;
+  }
+
+  if (typeof movie?.isAnimated === 'boolean') {
+    return movie.isAnimated ? 'animated' : 'live-action';
+  }
+
+  if (movie?.format === 'animated' || movie?.format === 'live-action') {
+    return movie.format;
+  }
+
+  const genres = getMovieGenres(movie);
+  if (genres.includes('animation')) {
+    return 'animated';
+  }
+
+  return 'live-action';
+}
+
 function intersects(genres, hints) {
   return genres.some(genre => hints.includes(genre));
 }
@@ -165,14 +171,32 @@ function scoreMovie(movie, answers) {
   const ending = getAnswerValue(answers, ['ending', 'feeling']);
   const attention = getAnswerValue(answers, ['attention', 'focus']);
   const darkness = getAnswerValue(answers, ['darkness', 'tone']);
+  const runtime = getAnswerValue(answers, ['runtime']);
+  const format = getAnswerValue(answers, ['format']);
 
   if (vibe && genres.length > 0 && intersects(genres, GENRE_HINTS[vibe] || [])) score += 3;
   if (ending && genres.length > 0 && intersects(genres, GENRE_HINTS[ending] || [])) score += 3;
   if (attention === 'full' && movie.runtime && movie.runtime >= 100) score += 2;
   if (attention === 'half' && movie.runtime && movie.runtime <= 120) score += 2;
   if (attention === 'sleep' && movie.runtime && movie.runtime <= 100) score += 2;
-  if (darkness && genres.length > 0 && intersects(genres, GENRE_HINTS[darkness] || [])) score += 2;
+  if (darkness && darkness !== 'any' && genres.length > 0 && intersects(genres, GENRE_HINTS[darkness] || [])) score += 2;
   if (darkness === 'light' && genres.length > 0 && !intersects(genres, ['horror', 'thriller', 'crime', 'mystery'])) score += 1;
+  if (runtime === '90' && movie.runtime) {
+    if (movie.runtime <= 90) score += 3;
+    else if (movie.runtime <= 120) score += 1;
+  }
+  if (runtime === '90-120' && movie.runtime) {
+    if (movie.runtime >= 90 && movie.runtime <= 120) score += 3;
+    else if (movie.runtime < 90) score += 1;
+  }
+  if (runtime === '120' && movie.runtime) {
+    if (movie.runtime >= 120) score += 3;
+    else if (movie.runtime >= 90) score += 1;
+  }
+  if (format && format !== 'any') {
+    const movieFormat = getMovieFormat(movie);
+    if (format === movieFormat) score += 2;
+  }
   if (movie.voteAverage) score += Math.max(0, Math.round(movie.voteAverage / 2));
 
   return score;
