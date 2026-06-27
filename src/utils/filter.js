@@ -10,6 +10,7 @@ export const QUESTIONS = [
       { value: 'cozy', label: 'Cozy', sub: 'Warm, low-stress, comforting' },
       { value: 'escape', label: 'Need to escape', sub: 'Get lost in something bigger' },
       { value: 'open', label: 'Emotionally open', sub: 'Ready for something real' },
+      { value: 'any', label: "I don't care", sub: 'Anything is fine' },
     ],
   },
   {
@@ -44,8 +45,8 @@ export const QUESTIONS = [
     emoji: '⏱️',
     type: 'single',
     options: [
-      { value: '90', label: '90 mins', sub: 'Quick and focused' },
-      { value: '90-120', label: '90–120 mins', sub: 'A comfortable middle' },
+      { value: '90', label: 'Up to 90', sub: 'Quick and focused' },
+      { value: '90-120', label: 'Up to 120', sub: 'A comfortable middle' },
       { value: '120', label: '120+', sub: 'Give it room to breathe' },
       { value: 'any', label: "I don't care", sub: 'Surprise me' },
     ],
