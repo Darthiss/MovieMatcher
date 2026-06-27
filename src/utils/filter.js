@@ -146,17 +146,19 @@ function getMovieGenres(movie) {
   return values;
 }
 
+const DARK_GENRES = ['horror', 'thriller', 'crime', 'mystery'];
+const DARKNESS_REQUIRED = {
+  edge: ['thriller', 'crime', 'mystery', 'action', 'drama'],
+  dark: ['horror', 'thriller', 'crime', 'mystery', 'drama'],
+};
+
 function getMovieFormat(movie) {
-  if (movie?.format) {
+  if (movie?.format === 'animated' || movie?.format === 'live-action') {
     return movie.format;
   }
 
   if (typeof movie?.isAnimated === 'boolean') {
     return movie.isAnimated ? 'animated' : 'live-action';
-  }
-
-  if (movie?.format === 'animated' || movie?.format === 'live-action') {
-    return movie.format;
   }
 
   const genres = getMovieGenres(movie);
@@ -171,43 +173,92 @@ function intersects(genres, hints) {
   return genres.some(genre => hints.includes(genre));
 }
 
+function hasGenreData(movie) {
+  return getMovieGenres(movie).length > 0;
+}
+
+function isRuntimeMatch(movie, runtime) {
+  if (!runtime || runtime === 'any') return true;
+  if (!movie?.runtime) return false;
+  const duration = Number(movie.runtime);
+  if (Number.isNaN(duration)) return false;
+  if (runtime === '90') return duration <= 90;
+  if (runtime === '90-120') return duration >= 90 && duration <= 120;
+  if (runtime === '120') return duration >= 120;
+  return true;
+}
+
+function isFormatMatch(movie, format) {
+  if (!format || format === 'any') return true;
+  return getMovieFormat(movie) === format;
+}
+
+function isDarknessMatch(movie, darkness) {
+  if (!darkness || darkness === 'any') return true;
+  const genres = getMovieGenres(movie);
+  if (genres.length === 0) return false;
+  if (darkness === 'light') {
+    return !intersects(genres, DARK_GENRES);
+  }
+  return intersects(genres, DARKNESS_REQUIRED[darkness] || []);
+}
+
+function isPreferenceMatch(movie, preference) {
+  if (!preference || preference === 'any') return true;
+  const genres = getMovieGenres(movie);
+  if (genres.length === 0) return false;
+  return intersects(genres, GENRE_HINTS[preference] || []);
+}
+
 function scoreMovie(movie, answers) {
   let score = 0;
   const genres = getMovieGenres(movie);
 
   const vibe = getAnswerValue(answers, ['vibe', 'mood']);
   const ending = getAnswerValue(answers, ['ending', 'feeling']);
-  const attention = getAnswerValue(answers, ['attention', 'focus']);
   const darkness = getAnswerValue(answers, ['darkness', 'tone']);
   const runtime = getAnswerValue(answers, ['runtime']);
   const format = getAnswerValue(answers, ['format']);
 
-  if (vibe && genres.length > 0 && intersects(genres, GENRE_HINTS[vibe] || [])) score += 3;
-  if (ending && genres.length > 0 && intersects(genres, GENRE_HINTS[ending] || [])) score += 3;
-  if (attention === 'full' && movie.runtime && movie.runtime >= 100) score += 2;
-  if (attention === 'half' && movie.runtime && movie.runtime <= 120) score += 2;
-  if (attention === 'sleep' && movie.runtime && movie.runtime <= 100) score += 2;
-  if (darkness && darkness !== 'any' && genres.length > 0 && intersects(genres, GENRE_HINTS[darkness] || [])) score += 2;
-  if (darkness === 'light' && genres.length > 0 && !intersects(genres, ['horror', 'thriller', 'crime', 'mystery'])) score += 1;
+  if (vibe && genres.length > 0 && intersects(genres, GENRE_HINTS[vibe] || [])) score += 5;
+  if (ending && genres.length > 0 && intersects(genres, GENRE_HINTS[ending] || [])) score += 4;
+  if (darkness && darkness !== 'any' && genres.length > 0 && intersects(genres, GENRE_HINTS[darkness] || [])) score += 3;
+  if (darkness === 'light' && genres.length > 0 && !intersects(genres, DARK_GENRES)) score += 1;
   if (runtime === '90' && movie.runtime) {
-    if (movie.runtime <= 90) score += 3;
+    if (movie.runtime <= 90) score += 4;
     else if (movie.runtime <= 120) score += 1;
   }
   if (runtime === '90-120' && movie.runtime) {
-    if (movie.runtime >= 90 && movie.runtime <= 120) score += 3;
+    if (movie.runtime >= 90 && movie.runtime <= 120) score += 4;
     else if (movie.runtime < 90) score += 1;
   }
   if (runtime === '120' && movie.runtime) {
-    if (movie.runtime >= 120) score += 3;
+    if (movie.runtime >= 120) score += 4;
     else if (movie.runtime >= 90) score += 1;
   }
   if (format && format !== 'any') {
     const movieFormat = getMovieFormat(movie);
-    if (format === movieFormat) score += 2;
+    if (format === movieFormat) score += 4;
   }
   if (movie.voteAverage) score += Math.max(0, Math.round(movie.voteAverage / 2));
 
   return score;
+}
+
+function isHardMatch(movie, answers) {
+  const format = getAnswerValue(answers, ['format']);
+  const runtime = getAnswerValue(answers, ['runtime']);
+  const darkness = getAnswerValue(answers, ['darkness', 'tone']);
+  const vibe = getAnswerValue(answers, ['vibe', 'mood']);
+  const ending = getAnswerValue(answers, ['ending', 'feeling']);
+
+  return (
+    isFormatMatch(movie, format) &&
+    isRuntimeMatch(movie, runtime) &&
+    isDarknessMatch(movie, darkness) &&
+    isPreferenceMatch(movie, vibe) &&
+    isPreferenceMatch(movie, ending)
+  );
 }
 
 export function filterMoviesByAnswers(movies, answers) {
@@ -223,10 +274,13 @@ export function filterMoviesByAnswers(movies, answers) {
     });
   }
 
-  return pool
+  const strictMatches = pool.filter(movie => isHardMatch(movie, answers));
+  const sorted = (strictMatches.length > 0 ? strictMatches : pool)
     .map(movie => ({ movie, score: scoreMovie(movie, answers) }))
     .sort((a, b) => b.score - a.score)
     .map(({ movie }) => movie);
+
+  return sorted;
 }
 
 export function mergeAnswers(a1, a2) {

@@ -20,11 +20,12 @@ test('prefers lighter, comedy-led picks for a celebratory night', () => {
   assert.equal(filtered[1].title, 'The Grand Budapest Hotel');
 });
 
-test('prefers shorter animated picks when runtime and format are specified', () => {
+test('enforces strict animated and short runtime filtering', () => {
   const movies = [
     { title: 'Dune', runtime: 155, genres: ['science_fiction', 'adventure'] },
     { title: 'Spirited Away', runtime: 125, genres: ['animation', 'fantasy'] },
-    { title: 'The Lego Movie', runtime: 100, genres: ['animation', 'comedy'] },
+    { title: 'The Lego Movie', runtime: 90, genres: ['animation', 'comedy'] },
+    { title: 'Short Cartoon', runtime: 85, genres: ['animation', 'family'] },
   ];
 
   const filtered = filterMoviesByAnswers(movies, {
@@ -32,8 +33,21 @@ test('prefers shorter animated picks when runtime and format are specified', () 
     format: 'animated',
   });
 
-  assert.equal(filtered[0].title, 'The Lego Movie');
-  assert.equal(filtered[1].title, 'Spirited Away');
+  assert.deepEqual(filtered.map(m => m.title), ['The Lego Movie', 'Short Cartoon']);
+});
+
+test('excludes dark films when the user selects light tone', () => {
+  const movies = [
+    { title: 'Bright Family', genres: ['comedy', 'family'], runtime: 95 },
+    { title: 'Dark Thriller', genres: ['thriller', 'crime'], runtime: 110 },
+  ];
+
+  const filtered = filterMoviesByAnswers(movies, {
+    darkness: 'light',
+  });
+
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0].title, 'Bright Family');
 });
 
 test('normalizes TMDB numeric genre IDs before filtering', () => {
@@ -48,6 +62,5 @@ test('normalizes TMDB numeric genre IDs before filtering', () => {
     darkness: 'light',
   });
 
-  assert.equal(filtered[0].title, 'Funny Movie');
-  assert.equal(filtered[1].title, 'Creepy Movie');
+  assert.deepEqual(filtered.map(m => m.title), ['Funny Movie']);
 });

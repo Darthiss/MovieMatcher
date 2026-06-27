@@ -54,7 +54,7 @@ export default function App() {
   function handleP1Answers(ans) {
     setAnswers(ans);
     const filtered = filterMoviesByAnswers(movies, ans);
-    const pool = shuffle(filtered).slice(0, 40); // cap at 40 for speed
+    const pool = shuffle(filtered.slice(0, 40)); // cap at 40 for speed, keep only top matches
     setFilteredMovies(pool);
     setScreen('p1-swipe');
   }
@@ -82,7 +82,7 @@ export default function App() {
   // P2 FLOW
   function handleP2Answers(ans) {
     const filtered = filterMoviesByAnswers(urlState.setup.movies, ans);
-    const pool = shuffle(filtered).slice(0, 40);
+    const pool = shuffle(filtered.slice(0, 40));
     setFilteredMovies(pool);
     setScreen('p2-swipe');
   }
