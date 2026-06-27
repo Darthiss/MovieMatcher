@@ -1,61 +1,38 @@
-// Zero-backend room system using URL encoding
-// Flow: P1 sets up → answers filters → gets shareable URL → P2 opens URL → answers filters → match
+// Room system using server storage (avoids huge URLs)
+// Flow: P1 sets up → answers → stores room on backend → gets short URL with roomId → P2 opens → retrieves room → answers → match
 
-export function encodeRoomSetup(setup) {
-  const json = JSON.stringify(setup);
-  return btoa(unescape(encodeURIComponent(json)));
-}
+const API_BASE = '/api/room';
 
-export function decodeRoomSetup(encoded) {
+export async function buildShareUrl(setup, p1Swipes) {
   try {
-    const json = decodeURIComponent(escape(atob(encoded)));
-    return JSON.parse(json);
-  } catch {
-    return null;
+    const res = await fetch(API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ setup, p1Swipes }),
+    });
+    const { roomId, error } = await res.json();
+    if (error) throw new Error(error);
+    const base = window.location.origin + window.location.pathname;
+    return `${base}?room=${roomId}`;
+  } catch (err) {
+    console.error('Failed to create room:', err);
+    throw err;
   }
 }
 
-export function encodeSwipes(swipes) {
-  // swipes: { [movieId]: 'yes' | 'no' }
-  const yesIds = Object.entries(swipes)
-    .filter(([, v]) => v === 'yes')
-    .map(([k]) => k);
-  const json = JSON.stringify(yesIds);
-  return btoa(unescape(encodeURIComponent(json)));
-}
-
-export function decodeSwipes(encoded) {
-  try {
-    const json = decodeURIComponent(escape(atob(encoded)));
-    const yesIds = JSON.parse(json);
-    const swipes = {};
-    yesIds.forEach(id => { swipes[id] = 'yes'; });
-    return swipes;
-  } catch {
-    return {};
-  }
-}
-
-export function buildShareUrl(setup, p1Swipes) {
-  const base = window.location.origin + window.location.pathname;
-  const params = new URLSearchParams();
-  params.set('room', encodeRoomSetup(setup));
-  params.set('p1', encodeSwipes(p1Swipes));
-  return `${base}?${params.toString()}`;
-}
-
-export function parseUrlState() {
+export async function parseUrlState() {
   const params = new URLSearchParams(window.location.search);
-  const room = params.get('room');
-  const p1 = params.get('p1');
+  const roomId = params.get('room');
 
-  if (!room) return { mode: 'setup' };
+  if (!roomId) return { mode: 'setup' };
 
-  const setup = decodeRoomSetup(room);
-  if (!setup) return { mode: 'setup' };
-
-  if (!p1) return { mode: 'p1-swipe', setup };
-
-  const p1Swipes = decodeSwipes(p1);
-  return { mode: 'p2-swipe', setup, p1Swipes };
+  try {
+    const res = await fetch(`${API_BASE}?id=${roomId}`);
+    if (!res.ok) return { mode: 'setup' };
+    const { setup, p1Swipes, error } = await res.json();
+    if (error) return { mode: 'setup' };
+    return { mode: 'p2-swipe', setup, p1Swipes };
+  } catch {
+    return { mode: 'setup' };
+  }
 }

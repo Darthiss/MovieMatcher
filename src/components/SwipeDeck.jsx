@@ -171,7 +171,7 @@ export default function SwipeDeck({ movies, onComplete, playerName = 'You' }) {
               {movie.year && (
                 <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>{movie.year}</div>
               )}
-              {movie.overview && (
+              {movie.overview ? (
                 <div style={{
                   color: 'rgba(255,255,255,0.78)',
                   fontSize: 13,
@@ -182,6 +182,13 @@ export default function SwipeDeck({ movies, onComplete, playerName = 'You' }) {
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
                 }}>{movie.overview}</div>
+              ) : (
+                <div style={{
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: 12,
+                  fontStyle: 'italic',
+                  marginTop: 8,
+                }}>No description available</div>
               )}
             </div>
           </div>

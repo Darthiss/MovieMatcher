@@ -136,7 +136,7 @@ export default function Results({ movies, p1Swipes, p2Swipes, onRestart }) {
                     color: '#fff',
                   }}>{winner.title}</h2>
                   {winner.year && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{winner.year}</div>}
-                  {winner.overview && (
+                  {winner.overview ? (
                     <div style={{
                       color: 'rgba(255,255,255,0.78)',
                       fontSize: 13,
@@ -147,6 +147,13 @@ export default function Results({ movies, p1Swipes, p2Swipes, onRestart }) {
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
                     }}>{winner.overview}</div>
+                  ) : (
+                    <div style={{
+                      color: 'rgba(255,255,255,0.5)',
+                      fontSize: 12,
+                      fontStyle: 'italic',
+                      marginTop: 8,
+                    }}>No description available</div>
                   )}
                 </div>
               </div>

@@ -5,7 +5,7 @@ import SwipeDeck from './components/SwipeDeck';
 import Share from './components/Share';
 import Results from './components/Results';
 import { filterMoviesByAnswers } from './utils/filter';
-import { buildShareUrl, parseUrlState, encodeSwipes, decodeSwipes } from './utils/room';
+import { buildShareUrl, parseUrlState } from './utils/room';
 
 // Shuffle array
 function shuffle(arr) {
@@ -28,17 +28,19 @@ export default function App() {
   const [urlState, setUrlState] = useState(null);
 
   useEffect(() => {
-    const state = parseUrlState();
-    setUrlState(state);
+    (async () => {
+      const state = await parseUrlState();
+      setUrlState(state);
 
-    if (state.mode === 'p2-swipe') {
-      // P2 landed on the link — load their movies from setup data
-      setMovies(state.setup.movies || []);
-      setP1Swipes(state.p1Swipes);
-      setScreen('p2-questionnaire');
-    } else {
-      setScreen('setup');
-    }
+      if (state.mode === 'p2-swipe') {
+        // P2 landed on the link — load their movies from setup data
+        setMovies(state.setup.movies || []);
+        setP1Swipes(state.p1Swipes);
+        setScreen('p2-questionnaire');
+      } else {
+        setScreen('setup');
+      }
+    })();
   }, []);
 
   // P1 FLOW

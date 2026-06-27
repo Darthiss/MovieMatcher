@@ -136,6 +136,12 @@ async function scrapeWatchlist(username) {
   return { username: normalized, movies: uniqueMovies };
 }
 
+const rooms = new Map();
+
+function generateRoomId() {
+  return Math.random().toString(36).substring(2, 8);
+}
+
 function sendJson(res, status, payload) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -162,6 +168,39 @@ const server = http.createServer(async (req, res) => {
       }
 
       sendJson(res, 200, { movies: result.movies, count: result.movies.length });
+      return;
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/room') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const { setup, p1Swipes } = JSON.parse(body);
+          const roomId = generateRoomId();
+          rooms.set(roomId, { setup, p1Swipes, timestamp: Date.now() });
+          sendJson(res, 200, { roomId });
+        } catch {
+          sendJson(res, 400, { error: 'Invalid request' });
+        }
+      });
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/room') {
+      const roomId = url.searchParams.get('id');
+      if (!roomId) {
+        sendJson(res, 400, { error: 'Missing room ID' });
+        return;
+      }
+
+      const room = rooms.get(roomId);
+      if (!room) {
+        sendJson(res, 404, { error: 'Room not found' });
+        return;
+      }
+
+      sendJson(res, 200, room);
       return;
     }
 
