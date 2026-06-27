@@ -35,3 +35,19 @@ test('prefers shorter animated picks when runtime and format are specified', () 
   assert.equal(filtered[0].title, 'The Lego Movie');
   assert.equal(filtered[1].title, 'Spirited Away');
 });
+
+test('normalizes TMDB numeric genre IDs before filtering', () => {
+  const movies = [
+    { title: 'Creepy Movie', genreIds: [27], runtime: 90 },
+    { title: 'Funny Movie', genreIds: [35, 10749], runtime: 90 },
+  ];
+
+  const filtered = filterMoviesByAnswers(movies, {
+    vibe: 'celebration',
+    ending: 'laughed',
+    darkness: 'light',
+  });
+
+  assert.equal(filtered[0].title, 'Funny Movie');
+  assert.equal(filtered[1].title, 'Creepy Movie');
+});

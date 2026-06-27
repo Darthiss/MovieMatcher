@@ -1,3 +1,5 @@
+import { TMDB_GENRE_MAP } from './tmdb.js';
+
 // Questions definition — used for both the questionnaire and filtering
 export const QUESTIONS = [
   {
@@ -129,7 +131,12 @@ function getMovieGenres(movie) {
 
   const fromIds = Array.isArray(movie?.genreIds) ? movie.genreIds : [];
   for (const id of fromIds) {
-    const mapped = typeof id === 'string' ? id.toLowerCase() : null;
+    let mapped = null;
+    if (typeof id === 'number') {
+      mapped = TMDB_GENRE_MAP[id] || null;
+    } else if (typeof id === 'string') {
+      mapped = TMDB_GENRE_MAP[Number(id)] || id.toLowerCase();
+    }
     if (mapped && !seen.has(mapped)) {
       seen.add(mapped);
       values.push(mapped);

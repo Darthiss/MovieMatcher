@@ -1,5 +1,5 @@
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_GENRE_MAP = {
+export const TMDB_GENRE_MAP = {
   28: 'action',
   12: 'adventure',
   35: 'comedy',

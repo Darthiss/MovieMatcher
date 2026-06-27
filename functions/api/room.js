@@ -23,12 +23,11 @@ export function getRoom(roomId) {
   return rooms.get(roomId) || null;
 }
 
-// HTTP handler for Cloudflare Functions
-export default async function handler(request) {
+export async function onRequest(context) {
+  const request = context.request;
   const url = new URL(request.url);
 
   if (request.method === 'POST') {
-    // Store room data
     try {
       const { setup, p1Swipes } = await request.json();
       const roomId = await storeRoom(setup, p1Swipes);
@@ -45,7 +44,6 @@ export default async function handler(request) {
   }
 
   if (request.method === 'GET') {
-    // Retrieve room data
     const roomId = url.searchParams.get('id');
     if (!roomId) {
       return new Response(JSON.stringify({ error: 'Missing room ID' }), {
